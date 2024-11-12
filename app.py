@@ -35,10 +35,10 @@ def setup_logging(log_dir: str = 'logs') -> logging.Logger:
     os.makedirs(log_dir, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f'text_processor_{timestamp}.log')
+    log_file = os.path.join(log_dir, f'ai_workflow-{timestamp}.log')
     
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler(log_file),
@@ -484,7 +484,7 @@ class ProcessingStrategy:
 
     def process(self, chunk: str, processor: TextProcessor, previous_outputs: Dict[str, str]) -> str:
         """Execute the strategy on a text chunk"""
-        logger.debug(f"Processing strategy: {self.config.prompt_name or self.config.tool_name}")
+        logger.info(f"Processing strategy: {self.config.prompt_name or self.config.tool_name}")
         
         try:
             if self.config.tool_name:
@@ -606,13 +606,13 @@ def main():
 
     try:
         # Load and validate configuration
-        config = ConfigManager.load_config(args.workflow, args.config)
+        configDict = ConfigManager.load_config(args.workflow, args.config)
         if args.debug:
-            logger.info("Config loaded successfully")
-            logger.info(f"Config: {json.dumps(config, indent=2)}")
+            logger.debug("Config loaded successfully")
+            logger.debug(f"Config: {json.dumps(configDict, indent=2)}")
 
         # Initialize processor
-        processor = TextProcessor(config, args.max_tokens, args.verbose, args.debug)
+        processor = TextProcessor(configDict, args.max_tokens, args.verbose, args.debug)
 
         # Setup input/output paths
         input_path = Path(args.input_file).resolve()

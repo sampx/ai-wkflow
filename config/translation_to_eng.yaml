@@ -1,6 +1,6 @@
 strategies:
 - input_format: '{{text}}'
-  model: openrouter/openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
   output_name: translation
   prompt_name: translate_en
 - input_format: 'original text:
@@ -12,7 +12,7 @@ strategies:
     {{translation}}
 
     '
-  model: openrouter/anthropic/claude-3.5-sonnet
+  model: openai/gpt-4o-mini
   output_name: reflection
   prompt_name: comment_en_trans
 - input_format: 'original text:
@@ -28,6 +28,6 @@ strategies:
     {{reflection}}
 
     '
-  model: openrouter/openai/gpt-4o-mini
+  model: openai/gpt-4o-mini
   output_name: improvement
   prompt_name: improved_trans_en

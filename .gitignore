@@ -9,5 +9,4 @@ poetry.lock
 .aider*
 outputs/
 source/
-
-
+.DS_Store
