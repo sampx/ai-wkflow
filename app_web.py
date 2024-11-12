@@ -13,31 +13,40 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def create_api_key_input(key_name, env_var_name):
     """创建API key输入框并处理其逻辑"""
-    # 直接从.env文件读取值
+    # 从会话状态或.env文件读取初始值
     env_path = os.path.join(os.path.dirname(__file__), '.env')
-    env_value = ""
-    if os.path.exists(env_path):
-        with open(env_path, 'r') as f:
-            for line in f:
-                if line.strip().startswith(f"{env_var_name} ="):
-                    env_value = line.split('=')[1].strip()
-                    break
+    
+    # 首次初始化或从.env文件读取
+    if f"{env_var_name}_key" not in st.session_state:
+        env_value = ""
+        if os.path.exists(env_path):
+            with open(env_path, 'r') as f:
+                for line in f:
+                    if line.strip().startswith(f"{env_var_name} ="):
+                        env_value = line.split('=')[1].strip().strip('"\'')
+                        break
+        st.session_state[f"{env_var_name}_key"] = env_value
 
-    # 创建密码输入框
+    # 创建密码输入框，使用会话状态的值
     api_key = st.text_input(
         f"{key_name} API Key",
-        value=env_value,
+        value=st.session_state[f"{env_var_name}_key"],
         type="password",
+        key=f"{env_var_name}_input",
         help=f"Enter your {key_name} API key"
     )
 
-    # 如果用户输入了新的API key且与环境变量不同
-    if api_key and api_key != env_value:
+    # 检查是否需要更新
+    if api_key != st.session_state[f"{env_var_name}_key"]:
+        # 更新会话状态
+        st.session_state[f"{env_var_name}_key"] = api_key
+        
+        # 更新.env文件
         if os.path.exists(env_path):
             with open(env_path, 'r') as f:
                 lines = f.readlines()
 
-            # 查找并更新API key
+            # 查找并更新或添加API key
             key_found = False
             for i, line in enumerate(lines):
                 if line.strip().startswith(f"{env_var_name} ="):
@@ -59,54 +68,85 @@ def create_api_key_input(key_name, env_var_name):
         # 更新环境变量
         os.environ[env_var_name] = api_key
 
+        # 触发重新运行以立即反映变化
+        st.rerun()
+
     return api_key
 
 def create_api_base_input(key_name, env_var_name):
     """创建API base URL输入框并处理其逻辑"""
-    # 直接从.env文件读取值
+    # 从会话状态或.env文件读取初始值
     env_path = os.path.join(os.path.dirname(__file__), '.env')
-    env_base_url = ""
-    if os.path.exists(env_path):
-        with open(env_path, 'r') as f:
-            for line in f:
-                if line.strip().startswith(f"{env_var_name} ="):
-                    env_base_url = line.split('=')[1].strip()
-                    break
-
-    # 创建base URL输入框
-    api_base = st.text_input(
-        f"{key_name} API Base URL",
-        value=env_base_url,
-        help=f"Enter your {key_name} API base URL (optional)"
-    )
-
-    # 如果用户输入了新的API base且与环境变量不同
-    if api_base and api_base != env_base_url:
+    
+    # 首次初始化或从.env文件读取
+    if f"{env_var_name}_base" not in st.session_state:
+        env_base_url = ""
         if os.path.exists(env_path):
             with open(env_path, 'r') as f:
-                lines = f.readlines()
+                for line in f:
+                    if line.strip().startswith(f"{env_var_name} ="):
+                        env_base_url = line.split('=')[1].strip().strip('"\'')
+                        break
+        st.session_state[f"{env_var_name}_base"] = env_base_url
 
-            # 查找并更新API base
-            base_found = False
-            for i, line in enumerate(lines):
-                if line.strip().startswith(f"{env_var_name} ="):
-                    lines[i] = f"{env_var_name} = {api_base}\n"
-                    base_found = True
-                    break
+    # 创建base URL输入框，使用会话状态的值
+    api_base = st.text_input(
+        f"{key_name} like API Base URL (optional)",
+        value=st.session_state[f"{env_var_name}_base"],
+        key=f"{env_var_name}_base_input",
+        help=f"Enter your {key_name} API base URL"
+    )
 
-            if not base_found:
-                lines.append(f"{env_var_name} = {api_base}\n")
-
-            # 写入更新后的内容
-            with open(env_path, 'w') as f:
-                f.writelines(lines)
+    # 检查是否需要更新
+    if api_base != st.session_state[f"{env_var_name}_base"]:
+        # 更新会话状态
+        st.session_state[f"{env_var_name}_base"] = api_base
+        
+        # 如果输入为空，从.env文件和环境变量中删除
+        if not api_base:
+            if os.path.exists(env_path):
+                with open(env_path, 'r') as f:
+                    lines = [line for line in f.readlines() if not line.strip().startswith(f"{env_var_name} =")]
+                
+                with open(env_path, 'w') as f:
+                    f.writelines(lines)
+            
+            if env_var_name in os.environ:
+                del os.environ[env_var_name]
         else:
-            # 如果.env文件不存在，创建新文件
-            with open(env_path, 'w') as f:
-                f.write(f"{env_var_name} = {api_base}\n")
+            # 检查输入是否为合法网址
+            if not api_base.startswith(('http://', 'https://')):
+                st.error(f"Invalid URL: {api_base}. Please enter a valid URL.")
+                return None
+            # 更新.env文件
+            if os.path.exists(env_path):
+                with open(env_path, 'r') as f:
+                    lines = f.readlines()
 
-        # 更新环境变量
-        os.environ[env_var_name] = api_base
+                # 查找并更新或添加base URL
+                base_found = False
+                for i, line in enumerate(lines):
+                    if line.strip().startswith(f"{env_var_name} ="):
+                        lines[i] = f"{env_var_name} = {api_base}\n"
+                        base_found = True
+                        break
+
+                if not base_found:
+                    lines.append(f"{env_var_name} = {api_base}\n")
+
+                # 写入更新后的内容
+                with open(env_path, 'w') as f:
+                    f.writelines(lines)
+            else:
+                # 如果.env文件不存在，创建新文件
+                with open(env_path, 'w') as f:
+                    f.write(f"{env_var_name} = {api_base}\n")
+
+            # 更新环境变量
+            os.environ[env_var_name] = api_base
+
+        # 触发重新运行以立即反映变化
+        st.rerun()
 
     return api_base
 
@@ -140,12 +180,10 @@ st.set_page_config(
 # 隐藏右上角的Deploy按钮
 hide_deploy_button_style = """
 <style>
-#MainMenu {visibility: hidden;}
 header {visibility: hidden;}
-footer {visibility: hidden;}
 </style>
 """
-# st.markdown(hide_deploy_button_style, unsafe_allow_html=True)
+st.markdown(hide_deploy_button_style, unsafe_allow_html=True)
 
 st.title('Text Processing Workflow')
 
@@ -198,9 +236,9 @@ col1, col2 = st.columns(2)
 with col1:
     # Process按钮
     process_button = st.button(
-        'Process', 
+        'Process',
         disabled=st.session_state.processing or not input_text,  # 确保处理过程中禁用
-        key='process_button_new',
+        key='process_button',
         use_container_width=True
     )
 
@@ -208,7 +246,7 @@ with col2:
     # Stop按钮
     if st.session_state.processing:
         stop_button = st.button(
-            'Stop', 
+            'Stop',
             key='stop_button',
             type='secondary',
             use_container_width=True
@@ -242,10 +280,10 @@ def process_file():
             text=True
         )
         st.session_state.process = process
-        
+
         # 等待进程完成
         stdout, stderr = process.communicate()
-        
+
         # 检查输出文件
         output_file = os.path.join(os.path.dirname(temp_file_path), f'{selected_workflow}-output.md')
         if os.path.exists(output_file):
@@ -255,7 +293,7 @@ def process_file():
         else:
             st.session_state.result = "error"
             st.session_state.output_content = f"标准输出:\n{stdout}\n\n错误输出:\n{stderr}"
-            
+
     except Exception as e:
         st.session_state.result = "error"
         st.session_state.output_content = f"发生错误: {str(e)}\n\n"
@@ -263,14 +301,14 @@ def process_file():
             st.session_state.output_content += f"标准输出:\n{stdout}\n\n"
         if 'stderr' in locals():
             st.session_state.output_content += f"错误输出:\n{stderr}"
-    
+
     finally:
         # 清理临时文件
         os.unlink(temp_file_path)
         st.session_state.processing = False
         st.session_state.process = None
 
-# 处理逻辑
+# 显示按钮
 if process_button and input_text:
     st.session_state.processing = True
     st.session_state.result = None
@@ -294,3 +332,4 @@ if st.session_state.result == "success" and st.session_state.output_content:
 elif st.session_state.result == "error" and st.session_state.output_content:
     st.error("处理过程中发生错误！")
     st.text_area('Error Details', st.session_state.output_content, height=300)
+

@@ -38,7 +38,7 @@ def setup_logging(log_dir: str = 'logs') -> logging.Logger:
     log_file = os.path.join(log_dir, f'ai_workflow-{timestamp}.log')
     
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler(log_file),
@@ -358,6 +358,7 @@ class TextProcessor(BaseTextProcessor):
                         logger.info(f"Strategy {i} result: {result[:500]}...")
             except Exception as e:
                 logger.error(f"Error in strategy {i}: {str(e)}")
+                raise  # 抛出异常以停止后续工作流
         
         return final_result
 
@@ -498,7 +499,7 @@ class ProcessingStrategy:
             return result if result is not None else ""
         except Exception as e:
             logger.error(f"Strategy execution error: {str(e)}")
-            return ""
+            raise  # 抛出异常以停止后续工作流
 
     def prepare_prompt(self, chunk: str, processor: TextProcessor, previous_outputs: Dict[str, str]) -> Union[str, List[Dict[str, str]]]:
         """Prepare prompt for model-based strategy"""
