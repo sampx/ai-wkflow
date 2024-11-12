@@ -1,0 +1,22 @@
+strategies:
+- input_format: '{{text}}'
+  output_name: exa_result
+  tool_name: exa_search
+  tool_params:
+    category: research paper
+- input_format: 'user input text: {{text}} search result: {{exa_result}}'
+  model: openai/gpt-4o-mini
+  output_name: outlined_result
+  prompt_name: outliner_wsy
+- input_format: 'outline filled:
+
+    {{outlined_result}}
+
+    search result:
+
+    {{exa_result}}
+
+    '
+  model: openai/gpt-4o-mini
+  output_name: literature_review_section
+  prompt_name: literature_review_exa

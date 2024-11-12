@@ -1,0 +1,25 @@
+strategies:
+- input_format: 'original text:
+
+    {{text}}
+
+    vocabularies:
+
+    {{memory_vocab}}
+
+    '
+  model: openai/gpt-4o-mini
+  output_name: correction
+  prompt_name: correct_cn_audio_transcription
+- input_format: 'original text:
+
+    {{correction}}
+
+    example:
+
+    {{memory_blog_example}}
+
+    '
+  model: openai/gpt-4o-mini
+  output_name: stylized
+  prompt_name: stylize_blog
